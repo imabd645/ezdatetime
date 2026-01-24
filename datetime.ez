@@ -193,10 +193,31 @@ task dt_diff_days(ts1, ts2) {
     diff = ts1 - ts2
     give dt_floor_div(diff, DT_MS_PER_DAY)
 }
+task date_time(x)
+{
+    time=dt_now()
+    time=dt_add(time,0,x,0,0)
+    time=dt_format(time)
+    give time
+}
+task date_now()
+{
+    time=dt_now()
+    give dt_date_string(time) 
+}
+task time_now(x)
+{
+    time=dt_now()
+    time=dt_add(time,0,x,0,0)
+    time=dt_time_string(time)
+    give time
+}
+
 
 // ============================================================================
 // Initialization
 // ============================================================================
+
 
 
 
