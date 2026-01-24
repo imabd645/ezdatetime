@@ -198,4 +198,5 @@ task dt_diff_days(ts1, ts2) {
 // Initialization
 // ============================================================================
 
-out "[Datetime] Library loaded v1.0.0"
+
+
