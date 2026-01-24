@@ -1,0 +1,201 @@
+// ============================================================================
+// DATETIME - Date and Time Library for EZ Language
+// Version 1.0.0
+// Uses Unix Timestamp (milliseconds since 1970-01-01 UTC)
+// ============================================================================
+
+// Constants
+DT_MS_PER_SEC = 1000
+DT_MS_PER_MIN = 60000
+DT_MS_PER_HOUR = 3600000
+DT_MS_PER_DAY = 86400000
+
+// ============================================================================
+// Internal Helpers
+// ============================================================================
+
+task dt_floor_div(a, b) {
+    // Performs integer division for large numbers (safe for timestamps)
+    // a // b = (a - (a % b)) / b
+    rem = a % b
+    give (a - rem) / b
+}
+
+task dt_is_leap(year) {
+    when (year % 4 equal 0) and ((year % 100 notequal 0) or (year % 400 equal 0)) {
+        give yes
+    }
+    give no
+}
+
+task dt_pad_zero(num) {
+    s = toStr(num)
+    when len(s) equal 1 {
+        give "0" + s
+    }
+    give s
+}
+
+task dt_days_in_month(year, month) {
+    // month is 1-12
+    when month equal 2 {
+        when dt_is_leap(year) { give 29 }
+        give 28
+    }
+    
+    when month equal 4 { give 30 }
+    when month equal 6 { give 30 }
+    when month equal 9 { give 30 }
+    when month equal 11 { give 30 }
+    
+    give 31
+}
+
+// ============================================================================
+// Core Functions
+// ============================================================================
+
+task dt_now() {
+    // Returns current UTC timestamp in milliseconds
+    give clock()
+}
+
+task dt_components(ts) {
+    // Converts timestamp to components {year, month, day, hour, minute, second, weekday}
+    
+    // Extract MS
+    total_ms = ts
+    ms = total_ms % 1000
+    total_seconds = dt_floor_div(total_ms, 1000)
+    
+    // Extract Seconds
+    second = total_seconds % 60
+    total_minutes = dt_floor_div(total_seconds, 60)
+    
+    // Extract Minutes
+    minute = total_minutes % 60
+    total_hours = dt_floor_div(total_minutes, 60)
+    
+    // Extract Hours
+    hour = total_hours % 24
+    total_days = dt_floor_div(total_hours, 24)
+    
+    // Calculate Year
+    current_year = 1970
+    
+    // Weekday: 1970-01-01 was Thursday (4). 0=Sun, 1=Mon...
+    weekday = (total_days + 4) % 7
+    
+    days_in_year = 365
+    when dt_is_leap(current_year) { days_in_year = 366 }
+    
+    until total_days > (days_in_year - 1) {
+        total_days = total_days - days_in_year
+        current_year = current_year + 1
+        
+        days_in_year = 365
+        when dt_is_leap(current_year) { days_in_year = 366 }
+    }
+    
+    // Calculate Month
+    month = 1
+    dim = dt_days_in_month(current_year, month)
+    
+    until total_days > (dim - 1) {
+        total_days = total_days - dim
+        month = month + 1
+        dim = dt_days_in_month(current_year, month)
+    }
+    
+    day = total_days + 1
+    
+    give {
+        year = current_year,
+        month = month,
+        day = day,
+        hour = hour,
+        minute = minute,
+        second = second,
+        millisecond = ms,
+        weekday = weekday
+    }
+}
+
+task dt_make(y, m, d, h, mn, s) {
+    // Creates timestamp from components (UTC)
+    
+    // Count days from 1970
+    total_days = 0
+    curr_y = 1970
+    
+    until curr_y < y {
+        dy = 365
+        when dt_is_leap(curr_y) { dy = 366 }
+        total_days = total_days + dy
+        curr_y = curr_y + 1
+    }
+    
+    // Add days for months in current year
+    curr_m = 1
+    until curr_m < m {
+        dm = dt_days_in_month(y, curr_m)
+        total_days = total_days + dm
+        curr_m = curr_m + 1
+    }
+    
+    total_days = total_days + (d - 1)
+    
+    // Sum up milliseconds
+    total_ms = total_days * 86400000
+    total_ms = total_ms + (h * 3600000)
+    total_ms = total_ms + (mn * 60000)
+    total_ms = total_ms + (s * 1000)
+    
+    give total_ms
+}
+
+task dt_format(ts) {
+    // Formats as "YYYY-MM-DD HH:mm:ss"
+    c = dt_components(ts)
+    give toStr(c.year) + "-" + dt_pad_zero(c.month) + "-" + dt_pad_zero(c.day) + " " + dt_pad_zero(c.hour) + ":" + dt_pad_zero(c.minute) + ":" + dt_pad_zero(c.second)
+}
+
+task dt_date_string(ts) {
+    // Formats as "YYYY-MM-DD"
+    c = dt_components(ts)
+    give toStr(c.year) + "-" + dt_pad_zero(c.month) + "-" + dt_pad_zero(c.day)
+}
+
+task dt_time_string(ts) {
+    // Formats as "HH:mm:ss"
+    c = dt_components(ts)
+    give dt_pad_zero(c.hour) + ":" + dt_pad_zero(c.minute) + ":" + dt_pad_zero(c.second)
+}
+
+// ============================================================================
+// Arithmetic
+// ============================================================================
+
+task dt_add(ts, days, hours, mins, secs) {
+    ms = ts
+    ms = ms + (days * DT_MS_PER_DAY)
+    ms = ms + (hours * DT_MS_PER_HOUR)
+    ms = ms + (mins * DT_MS_PER_MIN)
+    ms = ms + (secs * DT_MS_PER_SEC)
+    give ms
+}
+
+task dt_diff_ms(ts1, ts2) {
+    give ts1 - ts2
+}
+
+task dt_diff_days(ts1, ts2) {
+    diff = ts1 - ts2
+    give dt_floor_div(diff, DT_MS_PER_DAY)
+}
+
+// ============================================================================
+// Initialization
+// ============================================================================
+
+out "[Datetime] Library loaded v1.0.0"
