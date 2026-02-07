@@ -5,7 +5,8 @@
   "author": "Abdullah Masood",
   "main": "datetime.ez",
   "repository": "https://github.com/imabd645/EZ",
-  "keywords": ["date", "time", "datetime", "timestamp"],
+  "keywords": ["date", "time", "datetime"],
   "license": "MIT",
   "dependencies": {}
 }
+
